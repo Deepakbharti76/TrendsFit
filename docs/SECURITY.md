@@ -1,0 +1,2 @@
+# Security
+BCrypt passwords (>=10 chars, mixed), 5-failure lockout (15 min), hashed email/reset tokens, per-IP rate limits (stricter on /api/auth), CSRF off because auth is Bearer-header only, CORS allow-list, security headers, upload magic-byte validation (3 MB), server-side price/stock/coupon/exchange-window checks, audit log. Webhooks verified by HMAC/token. Secrets only via env vars. Known limit: role lives in the JWT until expiry.

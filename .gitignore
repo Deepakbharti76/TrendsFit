@@ -1,0 +1,46 @@
+# ---------- Secrets (NEVER commit) ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+secrets/
+application-local.yml
+application-local.properties
+application-prod.yml
+application-prod.properties
+
+# ---------- Database dumps / backups ----------
+*.sql.gz
+*.dump
+*.bak
+backup*/
+dump*.sql
+
+# ---------- Build output & dependencies ----------
+node_modules/
+dist/
+build/
+target/
+coverage/
+*.class
+*.jar
+
+# ---------- Uploaded files (customer/product images added at runtime) ----------
+uploads/
+
+# ---------- Logs & temp ----------
+*.log
+logs/
+tmp/
+*.tmp
+
+# ---------- IDE / OS ----------
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

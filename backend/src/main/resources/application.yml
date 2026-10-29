@@ -1,0 +1,132 @@
+# TrendsFit backend configuration.
+# EVERY secret comes from an environment variable. There are no real credentials in this file.
+spring:
+  application:
+    name: trendsfit
+  profiles:
+    default: dev
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/trendsfit?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none # the schema is owned by Flyway migrations
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Kolkata
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: always
+  servlet:
+    multipart:
+      max-file-size: 3MB
+      max-request-size: 4MB
+  mail:
+  host: ${MAIL_HOST:smtp.gmail.com}
+  port: ${MAIL_PORT:587}
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}
+  properties:
+    mail.smtp.auth: true
+    mail.smtp.starttls.enable: true
+
+server:
+  port: ${PORT:8081}
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none} # set to "native" behind a trusted reverse proxy
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  health:
+    mail:
+      enabled: false # JavaMailSender exists even with an empty MAIL_HOST; do not let it turn /health DOWN
+
+trendsfit:
+  jwt:
+    secret: ${JWT_SECRET:} # REQUIRED, at least 32 random characters
+    ttl-minutes: ${JWT_TTL_MINUTES:720}
+  cors:
+    origins: ${CORS_ORIGINS:http://localhost:5173}
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  public-url: ${PUBLIC_URL:http://localhost:8080}
+  upload-dir: ${UPLOAD_DIR:./uploads}
+  low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
+  exchange:
+    window-days: ${EXCHANGE_WINDOW_DAYS:7}
+  payment:
+    expiry-minutes: ${PAYMENT_EXPIRY_MINUTES:30}
+  cod:
+    enabled: ${COD_ENABLED:true}
+    max-order-value: ${COD_MAX_ORDER_VALUE:10000}
+  shipping:
+    free-for-all: ${SHIPPING_FREE_FOR_ALL:true}
+    free-above: ${SHIPPING_FREE_ABOVE:0}
+    flat-rate: ${SHIPPING_FLAT_RATE:0}
+  razorpay:
+    key-id: ${RAZORPAY_KEY_ID:}
+    key-secret: ${RAZORPAY_KEY_SECRET:}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
+  shiprocket:
+    email: ${SHIPROCKET_EMAIL:}
+    password: ${SHIPROCKET_PASSWORD:}
+    webhook-token: ${SHIPROCKET_WEBHOOK_TOKEN:}
+    pickup-postcode: ${SHIPROCKET_PICKUP_POSTCODE:}
+    pickup-location: ${SHIPROCKET_PICKUP_LOCATION:Primary}
+    default-weight-kg: ${SHIPROCKET_DEFAULT_WEIGHT_KG:0.5}
+    length-cm: ${SHIPROCKET_LENGTH_CM:30}
+    breadth-cm: ${SHIPROCKET_BREADTH_CM:25}
+    height-cm: ${SHIPROCKET_HEIGHT_CM:5}
+  business:
+    name: ${BUSINESS_NAME:TrendsFit}
+    address: ${BUSINESS_ADDRESS:}
+    email: ${BUSINESS_EMAIL:trendsfit.in@gmail.com}
+    whatsapp: ${BUSINESS_WHATSAPP:7644832949}
+  admin:
+    bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:}
+    bootstrap-password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:no-reply@trendsfit.in}
+  rate-limit:
+    capacity: ${RATE_CAPACITY:60}
+    refill-per-second: ${RATE_REFILL:1.0}
+    auth-capacity: ${AUTH_RATE_CAPACITY:10}
+    auth-refill-per-second: ${AUTH_RATE_REFILL:0.1}
+  dev-log-links: false
+
+---
+# Development: loads the clearly-labelled DEMO catalog (20 products, is_demo = 1) and logs mail links to the console.
+spring:
+  config:
+    activate:
+      on-profile: dev
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed-dev
+trendsfit:
+  dev-log-links: true
+
+---
+# Production: never loads demo data. Migrations that were applied by a dev profile are tolerated as "missing".
+spring:
+  config:
+    activate:
+      on-profile: prod
+  flyway:
+    locations: classpath:db/migration
+    ignore-migration-patterns: "*:missing"

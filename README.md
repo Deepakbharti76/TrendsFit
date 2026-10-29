@@ -92,15 +92,57 @@ flowchart LR
 
 ## 🗂️ Project structure
 
-```
-TrendsFit/
-├── backend/        ☕ Spring Boot API (domain, service, security, web, db/migration)
-├── frontend/       ⚛️ React + Vite storefront and /admin
-├── scripts/        🧪 run-domain-tests.sh, verify-sql*.sh, gen_demo_catalog.py, mock-api.mjs (TEST ONLY)
-├── docs/           📚 Architecture, deployment, security, live-testing checklist
-├── .github/        🔧 CI workflow
-└── .env.example    🔐 placeholders only (never commit real secrets)
-```
+TrendsFit-Java/
+├── 📄 README.md · CHANGELOG.md · .gitignore · .env.example
+├── 🔧 .github/
+│ ├── workflows/ci.yml ← GitHub Actions (auto test/build)
+│ └── modernize/java-upgrade/… ← VS Code Java-upgrade tool ki files (hata sakte ho)
+├── 📚 docs/ ARCHITECTURE · DEPLOYMENT · SECURITY · LIVE_TESTING (.md)
+├── 🧪 scripts/
+│ ├── run-domain-tests.sh · verify-sql.sh · verify-sql-admin.sh
+│ ├── gen_demo_catalog.py · mock-api.mjs (sirf test)
+│ └── junit-shim/… ← bina Maven ke domain tests chalane ke liye
+│
+├── ☕ backend/ (Spring Boot, Java 21)
+│ ├── pom.xml
+│ └── src/
+│ ├── main/java/in/trendsfit/
+│ │ ├── TrendsFitApplication.java
+│ │ ├── config/ AppConfig ← env variables
+│ │ ├── domain/ pure business rules: Money, PricingCalculator, CouponRules, Invoice,
+│ │ │ OrderStatus, ExchangeWindow, Jwt, Hmac, RazorpaySignature, Role, Settings,
+│ │ │ RevenueProgress, VariantPricing, Validators, SizeRecommender, TokenBucket
+│ │ ├── model/ DB entities: User, Product, ProductVariant, ProductImage, Category, Order,
+│ │ │ OrderItem, Payment, Shipment, Exchange, Coupon, Review, Address …
+│ │ ├── repo/ Spring Data repositories (11)
+│ │ ├── security/ SecurityConfig, JwtAuthFilter, RateLimitFilter, SecurityHeadersFilter, CurrentUser
+│ │ ├── integration/ RazorpayClient, ShiprocketClient (+ interfaces)
+│ │ ├── service/ CatalogService, OrderService, PaymentService, ShippingService, ExchangeService,
+│ │ │ AuthService, AccountService, AdminService, AdminProductService, AdminOpsService,
+│ │ │ AnalyticsService, SettingsService, SupportService, InvoiceService, EmailService,
+│ │ │ UploadService, AuditService, ScheduledJobs, AdminBootstrap
+│ │ └── web/ REST controllers: Public, Auth, Account, Order, Admin, AdminPanel, Support,
+│ │ Webhook, Seo + GlobalExceptionHandler, ApiException, WebMvcConfig
+│ ├── main/resources/
+│ │ ├── application.yml ← sirf ${ENV} placeholders
+│ │ └── db/
+│ │ ├── migration/ V1**core_schema · V2**app_settings · V3**admin_panel (.sql)
+│ │ └── seed-dev/ V100**demo_catalog.sql ← sirf dev profile ke liye demo products
+│ └── test/java/in/trendsfit/
+│ ├── domain/ 7 test files (pricing, exchange, security, settings, validation, revenue, variant price)
+│ └── integration/ ApiIntegrationTest (Docker chahiye)
+│
+└── ⚛️ frontend/ (React 18 + Vite)
+├── index.html · package.json · package-lock.json · vite.config.js
+├── public/ favicon.svg · img/demo/ ← demo product images
+└── src/
+├── main.jsx · App.jsx (routes) · styles.css
+├── pages/ Home, Shop, Product, Cart, Checkout, Order, TrackOrder, Account, Auth, Static, SupportChat
+├── components/ Layout, ProductCard, SearchSuggest, SizeFinder, BannerStrip, RequireAuth, Bits
+├── admin/ AdminLayout, Dashboard, Reports, Products, ProductEdit, Orders, Extra (payments/shipments/
+│ categories/banners), Support, Settings, Misc, PeriodPicker, charts, notify, common
+├── lib/ api, AppContext, cart, forms, money, razorpay, seo, adminNav, supportChat, idem, recentOrders
+└── test/ 7 test files (59+ tests)
 
 ---
 

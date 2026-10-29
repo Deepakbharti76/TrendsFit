@@ -92,8 +92,6 @@ flowchart LR
 
 ## 🗂️ Project structure
 
-## 🗂️ Project structure
-
 ```text
 TrendsFit-Java/
 ├── 📄 README.md · CHANGELOG.md · .gitignore · .env.example

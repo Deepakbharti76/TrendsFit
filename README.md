@@ -26,7 +26,7 @@ _Mobile-first storefront • Razorpay payments • Shiprocket shipping • 7-day
 
 - [✨ Features](#-features) · [🧰 Tech stack](#-tech-stack) · [🏗️ Architecture](#️-architecture) · [🗂️ Project structure](#️-project-structure)
 - [🚀 Quick start](#-quick-start) · [🔐 Configuration](#-configuration) · [🧪 Tests](#-tests)
-- [🛠️ Admin panel](#️-admin-panel) · [🔒 Security](#-security) · [❌ Not yet verified](#-not-yet-verified--needs-your-credentials) · [🆕 Changelog](#-latest-update) · [📝 Notes](#-notes)
+- [🛠️ Admin panel](#️-admin-panel) · [⚙️ Backend internals](#️-backend-internals) · [🔒 Security](#-security) · [❌ Not yet verified](#-not-yet-verified--needs-your-credentials) · [🆕 Changelog](#-latest-update) · [📝 Notes](#-notes)
 
 ---
 
@@ -41,12 +41,15 @@ _Mobile-first storefront • Razorpay payments • Shiprocket shipping • 7-day
 | 📏 **Size finder**         | Helps shoppers pick the right fit                                                              |
 | ⭐ **Reviews & wishlist**  | Ratings, moderated reviews, saved items                                                        |
 | 🛒 **Cart & checkout**     | Guest checkout, coupons, totals always recalculated on the server                              |
+| 🔁 **Safe checkout**       | Duplicate clicks never create two orders (idempotent order creation)                           |
 | 📍 **Pincode autofill**    | Enter a 6-digit pincode and city/state fill automatically                                      |
 | 📱 **Mobile number rules** | Exactly 10 digits (6–9 start), checked on the browser _and_ the server                         |
 | 💬 **Support chat**        | Customers chat with your team from the site                                                    |
 | 🔁 **Exchange**            | Within 7 days of delivery, otherwise _"Exchange period expired"_ (no cancel option, by design) |
 | 🧾 **Invoice**             | Downloadable non-GST invoice (`TF-YYYY-000123`)                                                |
 | 👤 **Accounts**            | Register/login, email verification, password reset, saved addresses, order history             |
+| ✉️ **Emails**              | Account verification, password reset and order confirmation                                    |
+| ⏳ **Auto-expiry**         | Unpaid online orders expire after 30 minutes and stock is released                             |
 | 🔎 **SEO**                 | `sitemap.xml`, `robots.txt`, canonical + Open Graph tags, JSON-LD                              |
 
 ### 💳 Payments & 🚚 Shipping
@@ -58,9 +61,13 @@ _Mobile-first storefront • Razorpay payments • Shiprocket shipping • 7-day
 ### 🛠️ Admin panel
 
 - 📊 Dashboard with **real** KPIs, revenue **circular progress** (target vs. achieved) and a revenue trend (daily / weekly / monthly)
-- 👕 Product management: images, prices, sale price, sizes, colours, stock, SEO, CSV import
+- 👕 Product management: images, prices, sale price, sizes, colours, stock, SEO
+- 📥 **CSV import** — bulk-add products from a spreadsheet
+- 🖼️ **Image uploads** — product and banner images (type and size checked)
+- 📦 **Inventory & stock history** — low-stock alerts and a log of every stock change
 - 📦 Orders, payments & refunds, COD tracking, shipments, exchanges
 - 👥 Customers, coupons, reviews, banners, categories, newsletter
+- 👥 **Admin users & permissions** — add staff and control what each role can see or do
 - ⚙️ Settings (store, shipping, payments, notifications), notification bell, audit log
 - 🔑 Role-based access: **Super Admin · Admin · Product Manager · Order Manager · Support Manager**
 - 📱 Fully responsive: sidebar on desktop, drawer on mobile
@@ -114,7 +121,8 @@ TrendsFit-Java/
 │       │   └── web/           REST controllers + global error handler
 │       ├── main/resources/
 │       │   ├── application.yml            (only ${ENV} placeholders)
-│       │   └── db/migration/              V1 core · V2 settings · V3 admin panel (Flyway)
+│       │   ├── db/migration/              V1 core · V2 settings · V3 admin panel (Flyway)
+│       │   └── db/seed-dev/               V100 demo catalog (dev profile only)
 │       └── test/                          domain + integration tests
 │
 └── ⚛️ frontend/                          (React 18 + Vite)
@@ -124,10 +132,12 @@ TrendsFit-Java/
         ├── main.jsx · App.jsx · styles.css
         ├── pages/         Home, Shop, Product, Cart, Checkout, Order, Account, Auth…
         ├── components/    Layout, ProductCard, SearchSuggest, SizeFinder, BannerStrip…
-        ├── admin/         Dashboard, Reports, Products, Orders, Support, Settings…
+        ├── admin/         Dashboard, Reports, Products, Inventory, Orders, Support, Settings…
         ├── lib/           api, cart, forms, money, razorpay, seo…
         └── test/          frontend tests
 ```
+
+> 📁 Uploaded images are saved in an `uploads/` folder at runtime. It is git-ignored and is not part of the repository.
 
 ---
 
@@ -152,6 +162,7 @@ cd frontend && npm ci && npm run dev      # http://localhost:5173  (proxies /api
 - 🌐 Storefront: `http://localhost:5173`
 - 🛠️ Admin: `http://localhost:5173/admin` (sign in with the bootstrap admin you configured)
 - 🔌 The backend port is `PORT` (default `8081`); the Vite proxy target lives in `frontend/vite.config.js`.
+- 🎭 The `dev` profile loads 20 demo products from `db/seed-dev`.
 - 🏭 For production use the default profile (no demo data) and set real environment variables.
 
 ## 🔐 Configuration
@@ -189,8 +200,18 @@ Open `/admin` after signing in. Highlights:
 - 🔵 **Revenue ring** — pick Today / 7 days / 30 days / custom, set a target, see % reached, remaining amount and change vs. the previous period (handles a zero target and values above 100%).
 - 🔗 **KPI cards** link straight to the matching filtered page.
 - 🏬 **View store** opens the storefront in one reusable tab, so the admin stays open.
+- 📦 **Inventory & stock** — see low-stock items and the history of every stock change.
+- 👥 **Admin users & permissions** — create staff accounts and choose their role and permissions.
 - 💬 **Support chat** with unread badges and read receipts (polling — not real-time sockets).
 - 🔔 **Notifications** for new orders, failed payments, low stock, exchanges, refunds and messages.
+
+## ⚙️ Backend internals
+
+- 🔁 **Idempotent orders** — each checkout carries a key, so a double click or retry returns the same order.
+- ⏳ **Scheduled job** — unpaid online orders expire after 30 minutes and their stock goes back.
+- ✉️ **Email types** — verification, password reset and order confirmation (SMTP; skipped when mail is not configured).
+- 🖼️ **Uploads** — images only, size-limited (3 MB) and checked by file signature, not just file name.
+- 🧾 **Stock movements** — every stock change (initial stock, admin edit, sale, release) is recorded per variant.
 
 ## 🔒 Security
 

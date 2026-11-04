@@ -3,6 +3,7 @@ package in.trendsfit.web;
 import in.trendsfit.security.CurrentUser;
 import in.trendsfit.service.AccountService;
 import in.trendsfit.service.OrderService;
+import in.trendsfit.service.UploadService;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,7 +12,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Everything here is scoped to the authenticated user (the id comes from the verified token, never from the request). */
@@ -20,8 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class AccountController {
     private final AccountService account;
     private final OrderService orders;
+    private final UploadService uploads;
 
-    public AccountController(AccountService account, OrderService orders) { this.account = account; this.orders = orders; }
+    public AccountController(AccountService account, OrderService orders, UploadService uploads) { this.account = account; this.orders = orders; this.uploads = uploads; }
 
     @GetMapping
     public Map<String, Object> me() { return account.me(CurrentUser.require().id()); }
@@ -31,6 +36,22 @@ public class AccountController {
     @PutMapping
     public Map<String, Object> update(@RequestBody ProfileReq r) {
         return account.updateProfile(CurrentUser.require().id(), r.fullName(), r.phone(), r.marketingConsent());
+    }
+
+    /** Upload or replace the profile photo (JPG/PNG/WebP, max 3 MB). The photo is stored on the user's account, so it survives logout/login. */
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String, Object> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        long id = CurrentUser.require().id();
+        String url = uploads.saveImage(file, "avatars");
+        uploads.deleteAvatarQuietly(account.replaceAvatar(id, url));
+        return account.me(id);
+    }
+
+    @DeleteMapping("/avatar")
+    public Map<String, Object> removeAvatar() {
+        long id = CurrentUser.require().id();
+        uploads.deleteAvatarQuietly(account.replaceAvatar(id, null));
+        return account.me(id);
     }
 
     public record PasswordReq(String currentPassword, String newPassword) {}

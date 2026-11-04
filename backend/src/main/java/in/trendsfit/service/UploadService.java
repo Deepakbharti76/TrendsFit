@@ -40,6 +40,20 @@ public class UploadService {
         }
     }
 
+    /** Best-effort removal of a previously uploaded profile photo. Only files directly inside /uploads/avatars/ can be deleted. */
+    public void deleteAvatarQuietly(String url) {
+        try {
+            if (url == null || !url.startsWith("/uploads/avatars/")) return;
+            String name = url.substring("/uploads/avatars/".length());
+            if (name.isEmpty() || name.contains("/") || name.contains("\\") || name.contains("..")) return;
+            Path dir = Path.of(cfg.uploadDir, "avatars").toAbsolutePath().normalize();
+            Path target = dir.resolve(name).normalize();
+            if (target.startsWith(dir)) Files.deleteIfExists(target);
+        } catch (IOException | RuntimeException ignored) {
+            // an orphaned file is harmless; never fail the request because of it
+        }
+    }
+
     static String detect(byte[] h) {
         if (h.length >= 3 && (h[0] & 0xFF) == 0xFF && (h[1] & 0xFF) == 0xD8 && (h[2] & 0xFF) == 0xFF) return "jpg";
         if (h.length >= 8 && (h[0] & 0xFF) == 0x89 && h[1] == 'P' && h[2] == 'N' && h[3] == 'G') return "png";

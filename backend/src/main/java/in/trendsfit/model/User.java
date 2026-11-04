@@ -10,6 +10,7 @@ public class User {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Long id;
     @Column(nullable = false, unique = true) public String email;
     public String phone;
+    @Column(name = "avatar_url") public String avatarUrl;
     @Column(name = "password_hash", nullable = false) public String passwordHash;
     @Column(name = "full_name", nullable = false) public String fullName;
     @Column(nullable = false) public String role = "CUSTOMER";

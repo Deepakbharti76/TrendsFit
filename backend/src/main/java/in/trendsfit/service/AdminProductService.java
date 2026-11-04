@@ -38,7 +38,7 @@ public class AdminProductService {
         this.products = products; this.categories = categories; this.jdbc = jdbc; this.audit = audit;
     }
 
-    public record ImageReq(String url, String alt) {}
+    public record ImageReq(String url, String alt, String color) {}
     public record VariantReq(Long id, String sku, String size, String color, String colorHex, Integer stock, BigDecimal priceOverride, Boolean active) {}
     public record ProductReq(String name, String slug, String sku, String categorySlug, String description, String fit, String material,
                              String care, String sizeChart, String videoUrl, BigDecimal price, BigDecimal salePrice, String seoTitle,
@@ -102,7 +102,7 @@ public class AdminProductService {
         m.put("bestseller", p.bestseller);
         m.put("demo", p.demo);
         List<Map<String, Object>> imgs = new ArrayList<>();
-        for (ProductImage i : p.images) imgs.add(Map.of("url", i.url, "alt", i.alt == null ? "" : i.alt));
+        for (ProductImage i : p.images) imgs.add(Map.of("url", i.url, "alt", i.alt == null ? "" : i.alt, "color", i.color == null ? "" : i.color));
         m.put("images", imgs);
         List<Map<String, Object>> vs = new ArrayList<>();
         for (ProductVariant v : p.variants) {
@@ -195,6 +195,7 @@ public class AdminProductService {
                 pi.product = p;
                 pi.url = i.url().trim();
                 pi.alt = blankToNull(i.alt());
+                pi.color = blankToNull(i.color());
                 pi.sortOrder = order++;
                 p.images.add(pi);
             }
@@ -376,7 +377,7 @@ public class AdminProductService {
                 List<VariantReq> vs = new ArrayList<>();
                 for (String sz : sizes) for (String cl : colors) vs.add(new VariantReq(null, null, sz, cl, null, stock, null, true));
                 List<ImageReq> imgs = new ArrayList<>();
-                for (String u : splitList(col.apply("image_urls"))) imgs.add(new ImageReq(u, null));
+                for (String u : splitList(col.apply("image_urls"))) imgs.add(new ImageReq(u, null, null));
                 String sale = col.apply("sale_price");
                 String status = col.apply("status").isEmpty() ? "DRAFT" : col.apply("status").toUpperCase();
                 create(new ProductReq(col.apply("name"), null, col.apply("sku"), col.apply("category"), col.apply("description"), col.apply("fit"),

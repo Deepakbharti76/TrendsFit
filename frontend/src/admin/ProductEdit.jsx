@@ -92,9 +92,15 @@ export default function ProductEdit() {
           </div>
           <div className="stat mb-3">
             <div className="d-flex justify-content-between mb-2"><strong>Images</strong><input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} aria-label="Upload image" /></div>
+            <div className="small text-muted mb-2">Tip: for a product with several colours, upload one photo per colour and set its <strong>Colour</strong> below. Customers then see that photo when they pick the colour. Leave “All colours” for photos that fit every colour.</div>
             <div className="d-flex flex-wrap gap-2">{f.images.map((im, i) => (
               <div key={im.url} className="border p-1 text-center" style={{ width: 110 }}>
                 <img src={im.url} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover' }} />
+                <select className="form-select form-select-sm mt-1" value={im.color || ''} aria-label={`Colour for image ${i + 1}`} title="Show this image only for one colour (optional)"
+                  onChange={(e) => setF({ ...f, images: f.images.map((x, j) => (j === i ? { ...x, color: e.target.value } : x)) })}>
+                  <option value="">All colours</option>
+                  {[...new Set([...f.variants.map((v) => (v.color || '').trim()), im.color || ''].filter(Boolean))].map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
                 <div className="btn-group btn-group-sm mt-1"><button type="button" className="btn btn-outline-secondary" onClick={() => move(i, -1)} aria-label="Move left">‹</button><button type="button" className="btn btn-outline-danger" onClick={() => setF({ ...f, images: f.images.filter((_, j) => j !== i) })} aria-label="Remove image">✕</button><button type="button" className="btn btn-outline-secondary" onClick={() => move(i, 1)} aria-label="Move right">›</button></div>
               </div>))}
             </div>

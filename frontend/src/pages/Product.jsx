@@ -68,6 +68,20 @@ export default function Product() {
     (p?.variants || []).forEach((v) => { if (!m.has(v.color)) m.set(v.color, v.colorHex); });
     return [...m.entries()];
   }, [p]);
+  // Images for the chosen colour. Images tagged with that colour win; otherwise the common (untagged) ones; otherwise all.
+  // Products without colour-tagged images behave exactly as before.
+  const galleryImages = useMemo(() => {
+    const all = p?.images || [];
+    const norm = (v) => String(v || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const words = (v) => norm(v).split(/[^a-z0-9]+/).filter(Boolean);
+    // "Pink" also matches "Light Pink" (all words of the shorter name appear in the longer one), but an exact match always wins.
+    const loose = (a, b) => { const x = words(a); const y = words(b); if (!x.length || !y.length) return false; const [sh, lg] = x.length <= y.length ? [x, y] : [y, x]; return sh.every((w) => lg.includes(w)); };
+    let tagged = all.filter((im) => im.color && norm(im.color) === norm(color));
+    if (!tagged.length) tagged = all.filter((im) => im.color && loose(im.color, color));
+    if (tagged.length) return tagged;
+    const common = all.filter((im) => !im.color);
+    return common.length ? common : all;
+  }, [p, color]);
   const variant = (p?.variants || []).find((v) => v.size === size && v.color === color);
   const stock = variant?.stock ?? 0;
   const sizeAvailable = (s) => (p?.variants || []).some((v) => v.size === s && v.color === color && v.stock > 0);
@@ -91,7 +105,7 @@ export default function Product() {
   function add(goCart) {
     if (!variant) { toast.push('Please choose a size and colour.', 'warning'); return; }
     if (stock < 1) { toast.push('This option is out of stock.', 'warning'); return; }
-    cart.add({ variantId: variant.id, qty, slug: p.slug, name: p.name, size: variant.size, color: variant.color, image: p.images?.[0]?.url });
+    cart.add({ variantId: variant.id, qty, slug: p.slug, name: p.name, size: variant.size, color: variant.color, image: galleryImages[0]?.url || p.images?.[0]?.url });
     toast.push('Added to cart');
     if (goCart) nav('/cart');
   }
@@ -113,7 +127,7 @@ export default function Product() {
       <nav aria-label="Breadcrumb" className="small mb-3"><Link to="/">Home</Link> / <Link to={`/shop?category=${p.categorySlug}`}>{p.category}</Link> / {p.name}</nav>
       {p.demo && <div className="alert alert-warning py-2 small">Demo product for development. Replace with real products from the admin panel.</div>}
       <div className="row g-4 g-lg-5">
-        <div className="col-lg-7"><Gallery images={p.images} name={p.name} /></div>
+        <div className="col-lg-7"><Gallery images={galleryImages} name={p.name} /></div>
         <div className="col-lg-5">
           <div className="text-uppercase text-muted ls">{p.category}{p.fit ? ` · ${p.fit} fit` : ''}</div>
           <h1 className="display-font h2 mt-1">{p.name}</h1>

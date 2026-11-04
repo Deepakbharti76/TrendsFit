@@ -181,7 +181,13 @@ public class CatalogService {
         m.put("ratingCount", p.ratingCount);
         m.put("demo", p.demo);
         List<Map<String, Object>> imgs = new ArrayList<>();
-        for (ProductImage i : p.images) imgs.add(Map.of("url", i.url, "alt", i.alt == null ? p.name : i.alt));
+        for (ProductImage i : p.images) {
+            Map<String, Object> im = new LinkedHashMap<>();
+            im.put("url", i.url);
+            im.put("alt", i.alt == null ? p.name : i.alt);
+            im.put("color", i.color); // null for common images
+            imgs.add(im);
+        }
         m.put("images", imgs);
         List<Map<String, Object>> vs = new ArrayList<>();
         for (ProductVariant v : p.variants) {

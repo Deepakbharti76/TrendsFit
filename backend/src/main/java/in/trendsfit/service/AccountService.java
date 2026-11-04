@@ -36,6 +36,16 @@ public class AccountService {
         return AuthService.profile(users.findById(userId).orElseThrow(() -> ApiException.notFound("Account not found.")));
     }
 
+    /** Stores the new photo URL for this user and returns the previous one (so the caller can delete the old file). */
+    @Transactional
+    public String replaceAvatar(long userId, String url) {
+        User u = users.findById(userId).orElseThrow(() -> ApiException.notFound("Account not found."));
+        String old = u.avatarUrl;
+        u.avatarUrl = url;
+        users.save(u);
+        return old;
+    }
+
     @Transactional
     public Map<String, Object> updateProfile(long userId, String fullName, String phone, Boolean marketing) {
         User u = users.findById(userId).orElseThrow(() -> ApiException.notFound("Account not found."));

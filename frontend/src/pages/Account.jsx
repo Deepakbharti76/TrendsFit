@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { api, apiError } from '../lib/api';
 import { useAuth, useToast } from '../lib/AppContext';
+import { Avatar } from '../components/Icons';
 import { useSeo } from '../lib/seo';
 import { Empty, ErrorBox, Field, PasswordInput, Spinner, StatusBadge } from '../components/Bits';
 import { STATES, digitsOnly, mobileError, mobileInput, pincodeError, usePincodeFill } from '../lib/forms';
@@ -55,6 +56,24 @@ export function Profile() {
     if (f.phone && mobileError(f.phone)) { setErrors({ phone: mobileError(f.phone) }); return; }
     try { const r = await api.put('/me', f); setUser(r.data); toast.push('Profile saved'); } catch (x) { const er = apiError(x); setErrors(er.fields); toast.push(er.message, 'danger'); }
   }
+  const [photoBusy, setPhotoBusy] = useState(false);
+  async function pickPhoto(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.push('Please choose a JPG, PNG or WebP image.', 'warning'); return; }
+    if (file.size > 3 * 1024 * 1024) { toast.push('Photo must be 3 MB or smaller.', 'warning'); return; }
+    setPhotoBusy(true);
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      const r = await api.post('/me/avatar', fd);
+      setUser(r.data); toast.push('Profile photo updated');
+    } catch (x) { toast.push(apiError(x).message, 'danger'); } finally { setPhotoBusy(false); }
+  }
+  async function removePhoto() {
+    setPhotoBusy(true);
+    try { const r = await api.delete('/me/avatar'); setUser(r.data); toast.push('Profile photo removed'); } catch (x) { toast.push(apiError(x).message, 'danger'); } finally { setPhotoBusy(false); }
+  }
   async function changePw(e) {
     e.preventDefault(); setPwErr('');
     try { await api.post('/me/password', pw); setPw({ currentPassword: '', newPassword: '' }); toast.push('Password changed'); } catch (x) { setPwErr(apiError(x).message); }
@@ -64,6 +83,17 @@ export function Profile() {
       <div className="col-lg-6">
         <form onSubmit={save} className="bg-white border p-3">
           <h2 className="h5">Profile</h2>
+          <div className="avatar-edit">
+            <Avatar url={user.avatarUrl} size={88} className="avatar-lg" alt="Your profile photo" />
+            <div>
+              <label className={`btn btn-sm btn-outline-dark mb-1 ${photoBusy ? 'disabled' : ''}`}>
+                {photoBusy ? 'Uploading…' : user.avatarUrl ? 'Change photo' : 'Upload photo'}
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={photoBusy} onChange={pickPhoto} aria-label="Upload profile photo" />
+              </label>
+              {user.avatarUrl && <button type="button" className="btn btn-link btn-sm text-danger" disabled={photoBusy} onClick={removePhoto}>Remove</button>}
+              <div className="small text-muted">JPG, PNG or WebP · up to 3 MB</div>
+            </div>
+          </div>
           <Field label="Full name" id="p-n" error={errors.fullName}><input id="p-n" className="form-control" value={f.fullName} onChange={(e) => setF({ ...f, fullName: e.target.value })} /></Field>
           <Field label="Email" id="p-e"><input id="p-e" className="form-control" value={user.email} disabled /></Field>
           <Field label="Mobile (optional)" id="p-p" error={errors.phone}><input id="p-p" className={`form-control ${errors.phone ? 'is-invalid' : ''}`} inputMode="numeric" value={f.phone} onChange={(e) => setF({ ...f, phone: mobileInput(e.target.value) })} /></Field>

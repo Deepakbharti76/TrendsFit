@@ -174,6 +174,7 @@ public class AuthService {
         m.put("email", u.email);
         m.put("fullName", u.fullName);
         m.put("phone", u.phone);
+        m.put("avatarUrl", u.avatarUrl);
         m.put("role", u.role);
         m.put("emailVerified", u.emailVerified);
         m.put("staff", u.roleEnum().isStaff());

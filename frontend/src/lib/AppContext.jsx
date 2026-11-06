@@ -87,7 +87,12 @@ export function AuthProvider({ children }) {
 // ------------------------------------------------------------------ cart
 const CartCtx = createContext(null);
 export const useCart = () => useContext(CartCtx);
-const CART_KEY = 'tf_cart';
+// The cart belongs to whoever is using it: a visitor's cart lives under GUEST_KEY, a signed-in customer's under their own key.
+// Signing in or out never carries one person's items over to the next person on the same browser.
+const GUEST_KEY = 'tf_cart';
+const userKey = (id) => `tf_cart_u${id}`;
+function readCart(key) { try { return sanitize(JSON.parse(localStorage.getItem(key) || '[]')); } catch { return []; } }
+function dropCart(key) { try { localStorage.removeItem(key); } catch { /* ignore */ } }
 
 function reducer(state, a) {
   switch (a.type) {
@@ -95,15 +100,32 @@ function reducer(state, a) {
     case 'qty': return setQty(state, a.variantId, a.qty);
     case 'remove': return removeLine(state, a.variantId);
     case 'clear': return [];
+    case 'set': return a.lines;
     default: return state;
   }
 }
 
 export function CartProvider({ children }) {
-  const [lines, dispatch] = useReducer(reducer, [], () => {
-    try { return sanitize(JSON.parse(localStorage.getItem(CART_KEY) || '[]')); } catch { return []; }
-  });
-  useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(lines)); } catch { /* ignore */ } }, [lines]);
+  const { user, ready } = useAuth();
+  const scope = user ? userKey(user.id) : GUEST_KEY;
+  const [lines, dispatch] = useReducer(reducer, [], () => (getToken() ? [] : readCart(GUEST_KEY)));
+  const loaded = useRef(getToken() ? null : GUEST_KEY); // which key the current `lines` were loaded from
+
+  // Save only into the key the lines were loaded from (never the previous person's items into the new key).
+  // This effect must stay ABOVE the switch effect: during a switch it still sees the old key and skips.
+  useEffect(() => {
+    if (loaded.current !== scope) return;
+    try { localStorage.setItem(scope, JSON.stringify(lines)); } catch { /* ignore */ }
+  }, [lines, scope]);
+  // Switch carts when the person changes (login, logout, another account).
+  useEffect(() => {
+    if (!ready || loaded.current === scope) return;
+    if (user) dropCart(GUEST_KEY); // signing in: the visitor's cart is not copied into the account
+    else if (loaded.current) dropCart(GUEST_KEY); // signing out: leave an empty cart for the next visitor
+    loaded.current = scope;
+    dispatch({ type: 'set', lines: user ? readCart(scope) : [] });
+  }, [scope, ready, user]);
+
   const value = useMemo(() => ({
     lines,
     count: countItems(lines),
